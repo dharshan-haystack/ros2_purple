@@ -12,6 +12,6 @@ jobs:
         run: |
           cd /home/dharshan/ros2_purple
           git fetch --tags
+          git reset --hard origin/main
           git checkout -f ${{ github.ref_name }}
-          git clean -fd src
           echo "Deployed release ${{ github.ref_name }}"
