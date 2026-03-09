@@ -6,17 +6,16 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
-
+    runs-on: self-hosted
     steps:
-      - name: SSH into server and pull latest release
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          script: |
-            cd /home/dharshan/ros2_purple
-            git fetch --tags
-            git checkout ${{ github.ref_name }}
-            echo "✅ Deployed release: ${{ github.ref_name }}"
+      - name: Pull latest release
+        run: |
+          cd /home/dharshan/ros2_purple
+          git fetch --tags
+          git checkout ${{ github.ref_name }}
+          echo "✅ Deployed release: ${{ github.ref_name }}"
+```
+
+The key changes:
+- `runs-on: ubuntu-latest` → `runs-on: self-hosted` (runs directly on your machine)
+- Removed the `appleboy/ssh-action` step (no SSH needed anymore!)
