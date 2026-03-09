@@ -13,9 +13,4 @@ jobs:
           cd /home/dharshan/ros2_purple
           git fetch --tags
           git checkout ${{ github.ref_name }}
-          echo "✅ Deployed release: ${{ github.ref_name }}"
-```
-
-The key changes:
-- `runs-on: ubuntu-latest` → `runs-on: self-hosted` (runs directly on your machine)
-- Removed the `appleboy/ssh-action` step (no SSH needed anymore!)
+          echo "Deployed release ${{ github.ref_name }}"
