@@ -8,10 +8,10 @@ jobs:
   deploy:
     runs-on: self-hosted
     steps:
-      - name: Pull latest release
+      - name: Pull latest release into versioned folder
         run: |
-          cd /home/dharshan/ros2_purple
-          git fetch --tags
-          git reset --hard origin/main
-          git checkout -f ${{ github.ref_name }}
-          echo "Deployed release ${{ github.ref_name }}"
+          mkdir -p /home/dharshan/releases/${{ github.ref_name }}
+          git -C /home/dharshan/ros2_purple fetch --tags
+          git -C /home/dharshan/ros2_purple checkout -f ${{ github.ref_name }}
+          cp -r /home/dharshan/ros2_purple/. /home/dharshan/releases/${{ github.ref_name }}/
+          echo "Saved release ${{ github.ref_name }} to /home/dharshan/releases/${{ github.ref_name }}"
