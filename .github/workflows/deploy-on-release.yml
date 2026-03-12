@@ -3,15 +3,32 @@ name: Deploy on Release
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: self-hosted
     steps:
-      - name: Pull latest release into versioned folder
+      - name: Sync all releases to local folders
         run: |
-          mkdir -p /home/dharshan/releases/${{ github.ref_name }}
-          git -C /home/dharshan/ros2_purple fetch --tags
-          git -C /home/dharshan/ros2_purple checkout -f ${{ github.ref_name }}
-          cp -r /home/dharshan/ros2_purple/. /home/dharshan/releases/${{ github.ref_name }}/
-          echo "Saved release ${{ github.ref_name }} to /home/dharshan/releases/${{ github.ref_name }}"
+          REPO_DIR="/home/dharshan/ros2_purple"
+          RELEASES_DIR="/home/dharshan/releases"
+
+          # Fetch all tags from GitHub
+          git -C $REPO_DIR fetch --tags
+
+          # Loop through ALL tags every time
+          for tag in $(git -C $REPO_DIR tag); do
+            if [ ! -d "$RELEASES_DIR/$tag" ]; then
+              echo "New tag found: $tag - pulling..."
+              git -C $REPO_DIR checkout -f $tag
+              mkdir -p $RELEASES_DIR/$tag
+              cp -r $REPO_DIR/. $RELEASES_DIR/$tag/
+              echo "Saved $tag"
+            else
+              echo "$tag already exists, skipping..."
+            fi
+          done
+
+          echo "Done! All releases in local:"
+          ls $RELEASES_DIR
