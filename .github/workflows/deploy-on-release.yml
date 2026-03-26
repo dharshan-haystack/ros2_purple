@@ -1,45 +1,44 @@
 name: Deploy on Release
-
 on:
   push:
     tags:
       - '*'
   workflow_dispatch:
-
 jobs:
   deploy:
     runs-on: self-hosted
     env:
       TZ: Asia/Kolkata
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
       - name: Sync releases - download zip directly from GitHub
         run: |
           REPO_NAME="ros2_purple"
           REPO_DIR="/home/dharshan/ros2_purple"
-          RELEASES_DIR="/home/dharshan/releases"
+          RELEASES_DIR="/home/dharshan/releases/ros2_purple"
+          GITHUB_ORG="dharshan-haystack"
 
           echo "======================================"
           echo "Repo : $REPO_NAME"
           echo "Time : $(date)"
           echo "======================================"
 
-          # Fetch tags and prune deleted ones
           git -C $REPO_DIR fetch --tags --prune --prune-tags
 
           for tag in $(git -C $REPO_DIR tag); do
-
             REMOTE_HASH=$(git -C $REPO_DIR rev-list -n 1 $tag)
             HASH_FILE="$RELEASES_DIR/${tag}.hash"
             ZIP_FILE="$RELEASES_DIR/${tag}.zip"
 
             if [ -f "$ZIP_FILE" ]; then
-              # Zip exists — check if tag was deleted and re-published
               if [ -f "$HASH_FILE" ]; then
                 LOCAL_HASH=$(cat $HASH_FILE)
                 if [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
                   NEWNAME="${tag}_updated_$(date +%Y%m%d_%H%M%S)"
                   echo "Tag $tag re-published! Saving as $NEWNAME.zip"
-                  curl -sL "https://github.com/$GITHUB_ORG/$REPO_NAME/archive/refs/tags/$tag.zip" \
+                  curl -sL \
+                    -H "Authorization: token $GH_TOKEN" \
+                    "https://api.github.com/repos/$GITHUB_ORG/$REPO_NAME/zipball/refs/tags/$tag" \
                     -o "$RELEASES_DIR/$NEWNAME.zip"
                   echo $REMOTE_HASH > "$RELEASES_DIR/$NEWNAME.hash"
                   echo "Saved $NEWNAME.zip"
@@ -47,16 +46,15 @@ jobs:
                   echo "$tag unchanged, skipping..."
                 fi
               fi
-
             else
-              # New tag — download zip directly from GitHub
               echo "New tag: $tag - downloading zip from GitHub..."
-              curl -sL "https://github.com/$GITHUB_ORG/$REPO_NAME/archive/refs/tags/$tag.zip" \
+              curl -sL \
+                -H "Authorization: token $GH_TOKEN" \
+                "https://api.github.com/repos/$GITHUB_ORG/$REPO_NAME/zipball/refs/tags/$tag" \
                 -o "$ZIP_FILE"
               echo $REMOTE_HASH > "$HASH_FILE"
               echo "Saved $tag.zip"
             fi
-
           done
 
           echo ""
