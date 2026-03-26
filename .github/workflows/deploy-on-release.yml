@@ -15,7 +15,7 @@ jobs:
         run: |
           REPO_NAME="ros2_purple"
           REPO_DIR="/home/dharshan/ros2_purple"
-          RELEASES_DIR="/home/dharshan/releases/ros2_purple"
+          RELEASES_DIR="/home/dharshan/releases/"
           GITHUB_ORG="dharshan-haystack"
 
           echo "======================================"
