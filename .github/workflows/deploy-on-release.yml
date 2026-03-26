@@ -1,8 +1,9 @@
 name: Deploy on Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - '*'        # triggers on ANY new tag pushed
   workflow_dispatch:
 
 jobs:
@@ -10,25 +11,40 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Sync all releases to local folders
+        env:
+          TZ: Asia/Kolkata
         run: |
           REPO_DIR="/home/dharshan/ros2_purple"
-          RELEASES_DIR="/home/dharshan/releases"
+          RELEASES_DIR="/home/dharshan/releases/ros2_purple"
 
-          # Fetch all tags from GitHub
           git -C $REPO_DIR fetch --tags
 
-          # Loop through ALL tags every time
           for tag in $(git -C $REPO_DIR tag); do
-            if [ ! -d "$RELEASES_DIR/$tag" ]; then
-              echo "New tag found: $tag - pulling..."
+
+            if [ -d "$RELEASES_DIR/$tag" ]; then
+              LOCAL=$(find $RELEASES_DIR/$tag -type f | sort | md5sum)
+              git -C $REPO_DIR checkout -f $tag
+              REMOTE=$(find $REPO_DIR -not -path '*/.git/*' -type f | sort | md5sum)
+              if [ "$LOCAL" != "$REMOTE" ]; then
+                NEWNAME="${tag}_updated_$(date +%Y%m%d_%H%M%S)"
+                echo "Tag $tag changed! Saving as $NEWNAME"
+                mkdir -p $RELEASES_DIR/$NEWNAME
+                cp -r $REPO_DIR/. $RELEASES_DIR/$NEWNAME/
+                zip -r $RELEASES_DIR/$NEWNAME.zip $RELEASES_DIR/$NEWNAME/
+              else
+                echo "$tag unchanged, skipping..."
+              fi
+
+            else
+              echo "New tag: $tag - pulling..."
               git -C $REPO_DIR checkout -f $tag
               mkdir -p $RELEASES_DIR/$tag
               cp -r $REPO_DIR/. $RELEASES_DIR/$tag/
-              echo "Saved $tag"
-            else
-              echo "$tag already exists, skipping..."
+              zip -r $RELEASES_DIR/$tag.zip $RELEASES_DIR/$tag/
+              echo "Saved $tag + zip"
             fi
+
           done
 
-          echo "Done! All releases in local:"
+          echo "Done! All releases:"
           ls $RELEASES_DIR
